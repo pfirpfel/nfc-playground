@@ -52,9 +52,9 @@ namespace ACSTest
         /// <summary>
         /// Raised when errors during card authentifiactio occur.
         /// </summary>
-        public class AuthentifiactionException : Exception
+        public class AuthentificationException : Exception
         {
-            public AuthentifiactionException(string message) : base(message) { }
+            public AuthentificationException(string message) : base(message) { }
         }
 
         /// <summary>
@@ -63,6 +63,11 @@ namespace ACSTest
         public class CardFormatException : Exception
         {
             public CardFormatException(string message) : base(message) { }
+        }
+
+        public class ReaderException : Exception
+        {
+            public ReaderException(string message) : base(message) { }
         }
         
         /// <summary>
@@ -167,7 +172,7 @@ namespace ACSTest
         /// Loads authentification keys into the reader.
         /// </summary>
         /// <exception cref="ConnectionException">If connection to card dropped during loading.</exception>
-        /// <exception cref="AuthentifiactionException">If loading of keys failed.</exception>
+        /// <exception cref="AuthentificationException">If loading of keys failed.</exception>
         private void loadAuthenticationKey()
         {
             ClearBuffers();
@@ -198,7 +203,7 @@ namespace ACSTest
                 response.AppendFormat("{0:X2}", RecvBuff[i]);
             }
             if (response.ToString().Trim() != "90 00")
-                throw new AuthentifiactionException("Error while loading authentication key.");
+                throw new AuthentificationException("Error while loading authentication key.");
         }
 
         /// <summary>
@@ -208,7 +213,7 @@ namespace ACSTest
         /// <param name="keyType">Key type used for authentification</param>
         /// <param name="keyNumber">Key number/location</param>
         /// <exception cref="ConnectionException">If connection to card dropped during authentificating.</exception>
-        /// <exception cref="AuthentifiactionException">If authentificating of block failed.</exception>
+        /// <exception cref="AuthentificationException">If authentificating of block failed.</exception>
         private void authenticateBlock(byte blockNumber, KeyType keyType, byte keyNumber)
         {
             ClearBuffers();
@@ -238,7 +243,7 @@ namespace ACSTest
                 response.AppendFormat("{0:X2}", RecvBuff[i]);
             }
             if (response.ToString().Trim() != "90 00")
-                throw new AuthentifiactionException("Error while authentificating block.");
+                throw new AuthentificationException("Error while authentificating block.");
             authentificatedBlock = blockNumber;
         }
 
@@ -248,13 +253,14 @@ namespace ACSTest
         /// <param name="blockNumber">Number/address of block</param>
         /// <param name="bytesToRead">Amount of bytes to read</param>
         /// <returns>Requested bytes</returns>
-        /// <exception cref="AuthentifiactionException">When requested block is not authentificated</exception>
+        /// <exception cref="AuthentificationException">When requested block is not authentificated</exception>
         /// <exception cref="ArgumentOutOfRangeException">If blockNumber invalid or bytesToRead longer than block size.</exception>
         /// <exception cref="ConnectionException">If connection to card dropped during reading.</exception>
+        /// <exception cref="ReaderException">If read command was otherwise unsuccesfull.</exception>
         private byte[] readBinaryBlock(byte blockNumber, byte bytesToRead)
         {
             if (authentificatedBlock != blockNumber)
-                throw new AuthentifiactionException("Requested block not authentificated.");
+                throw new AuthentificationException("Requested block not authentificated.");
             if (blockNumber > 0x40 || bytesToRead > 0x10) // Todo Ranges for Mifare 1k
                 throw new ArgumentOutOfRangeException();
 
@@ -279,7 +285,7 @@ namespace ACSTest
                 response.AppendFormat("{0:X2}", RecvBuff[i]);
             }
             if (response.ToString().Trim() != "90 00")
-                throw new AuthentifiactionException("Error while reading block.");
+                throw new ReaderException("Error while reading block.");
 
             return RecvBuff;
         }
@@ -290,8 +296,9 @@ namespace ACSTest
         /// <param name="blockNumber"></param>
         /// <returns></returns>
         /// <exception cref="ConnectionException">If connection to card dropped during authentificating or reading.</exception>
-        /// <exception cref="AuthentifiactionException">If authentificating or reading of block failed.</exception>
+        /// <exception cref="AuthentificationException">If authentificating or reading of block failed.</exception>
         /// <exception cref="ArgumentOutOfRangeException">If blockNumber invalid or bytesToRead longer than block size.</exception>
+        /// <exception cref="ReaderException">If read command was unsuccesfull.</exception>
         private byte[] getBlock(byte blockNumber)
         {
             try {
@@ -307,7 +314,7 @@ namespace ACSTest
         /// <summary>
         /// Reads the entire accessible memory of a card.
         /// </summary>
-        /// <exception cref="AuthentifiactionException">When requested block is not authentificated</exception>
+        /// <exception cref="AuthentificationException">When requested block is not authentificated</exception>
         /// <exception cref="ArgumentOutOfRangeException">If blockNumber invalid or bytesToRead longer than block size.</exception>
         /// <exception cref="ConnectionException">If connection to card dropped during reading.</exception>
         private void readCardMemory()
@@ -353,6 +360,9 @@ namespace ACSTest
         /// <exception cref="CardFormatException">Content of card memory doesn't meet expectations</exception>
         public byte[] getNDEFMessage()
         {
+            if (!connectionActive)
+                throw new ConnectionException("No open connection.");
+
             readCardMemory();
 
             byte[] message;
@@ -385,6 +395,46 @@ namespace ACSTest
                 throw new CardFormatException("NDEF Message end not found.");
 
             return message;
+        }
+
+        /// <summary>
+        /// Gets UID of a card.
+        /// </summary>
+        /// <returns>UID of card as byte array</returns>
+        /// <exception cref="ConnectionException">If connection to card dropped during reading.</exception>
+        /// <exception cref="ReaderException">If read command was otherwise unsuccesfull.</exception>
+        public byte[] getUID()
+        {
+            if (!connectionActive)
+                throw new ConnectionException("No open connection.");
+
+            ClearBuffers();
+
+            SendBuff[0] = 0xFF;            // Class
+            SendBuff[1] = 0xCA;            // INS
+            SendBuff[2] = 0x00;            // P1
+            SendBuff[3] = 0x00;            // P2
+            SendBuff[4] = 0x00;            // Le
+
+            SendLen = 5;
+            RecvLen = 6;
+
+            int getUIDRetCode = SendAPDU();
+
+
+            if (getUIDRetCode != ModWinsCard.SCARD_S_SUCCESS)
+                throw new ConnectionException("Connection problem while reading UID.");
+
+            // Get status
+            StringBuilder status = new StringBuilder();
+            for (int i = RecvLen - 2; i <= RecvLen - 1; i++)
+            {
+                status.AppendFormat("{0:X2}", RecvBuff[i]);
+            }
+            if (status.ToString().Trim() != "90 00")
+                throw new ReaderException("Error while reading UID.");
+
+            return RecvBuff.Take(4).ToArray();
         }
 
         /// <summary>
@@ -434,6 +484,9 @@ namespace ACSTest
         /// </summary>
         public void startPolling()
         {
+            if (!connectionActive)
+                throw new ConnectionException("No open connection.");
+
             cancelSource = new CancellationTokenSource();
             poller = new Thread(() => poll(cancelSource.Token));
             poller.IsBackground = true;
