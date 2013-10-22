@@ -206,7 +206,7 @@ namespace ACSTest
             {
                 response.AppendFormat("{0:X2}", RecvBuff[i]);
             }
-            if (response.ToString().Trim() != "90 00")
+            if (!response.ToString().Trim().Equals("90 00"))
                 throw new AuthentificationException("Error while loading authentication key.");
         }
 
@@ -246,7 +246,7 @@ namespace ACSTest
             {
                 response.AppendFormat("{0:X2}", RecvBuff[i]);
             }
-            if (response.ToString().Trim() != "9000")
+            if (!response.ToString().Trim().Equals("9000"))
                 throw new AuthentificationException("Error while authentificating block.");
             authentificatedBlock = blockNumber;
         }
@@ -288,7 +288,7 @@ namespace ACSTest
             {
                 response.AppendFormat("{0:X2}", RecvBuff[i]);
             }
-            if (response.ToString().Trim() != "9000")
+            if (!response.ToString().Trim().Equals("9000"))
                 throw new ReaderException("Error while reading block.");
 
             return RecvBuff;
@@ -455,7 +455,7 @@ namespace ACSTest
             {
                 status.AppendFormat("{0:X2}", RecvBuff[i]);
             }
-            if (status.ToString().Trim() != "9000")
+            if (!status.ToString().Trim().Equals("9000"))
                 throw new ReaderException("Error while reading UID.");
 
             CloseConnectionToCard();
