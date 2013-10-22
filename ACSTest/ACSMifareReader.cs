@@ -20,10 +20,9 @@ namespace ACSTest
         private bool connectionActive = false;
         private byte[] SendBuff = new byte[263];
         private byte[] RecvBuff = new byte[263];
-        private ModWinsCard.SCARD_READERSTATE RdrState;
         private ModWinsCard.SCARD_IO_REQUEST pioSendRequest;
         private List<String> readers;
-        private String selectedReader;
+        private int selectedReader = 0;
 
         /// <summary>
         /// Memory content of read card.
@@ -33,7 +32,7 @@ namespace ACSTest
         /// <summary>
         /// Publishes read NDEF messages if polling is activated.
         /// </summary>
-        public event NewNDEFMessageHandler NewNDEFMessage;
+        public event NewNDEFMessageHandler NewNDEFMessageReceived;
 
         /// <summary>
         /// Variables for card polling.
@@ -41,6 +40,8 @@ namespace ACSTest
         private Thread poller;
         private CancellationTokenSource cancelSource;
         private const int pollerInterval = 200; // in milliseconds
+        private byte[] lastMessage;
+        private int lastMessageAge = 0;
 
         /// <summary>
         /// Raised when connection problems with reader and/or card occur.
@@ -79,7 +80,7 @@ namespace ACSTest
         /// Initializes context and reader list.
         /// </summary>
         /// <exception cref="ConnectionException">If initialization of reader list fails.</exception>
-        public void ACSMifareReader()
+        public ACSMifareReader()
         {
             readers = new List<String>();
             cardMemory = new byte[15 * 3 * 16]; // TODO: init memory according to card type
@@ -117,55 +118,58 @@ namespace ACSTest
                 rName = "";
                 i++;
             }
+
+            //selectedReader
         }
 
         /// <summary>
-        /// Connects to the first available reader.
+        /// Connects to card on the reader with the given id.
         /// </summary>
-        /// <exception cref="ConnectionException">When connection cannot be established.</exception>
-        public void connect(){
-            connect(0);
-        }
-
-        /// <summary>
-        /// Connects to the reader with the given id.
-        /// </summary>
-        /// <param name="readerId">Id of the reader, starting with 0.</param>
         /// <exception cref="ConnectionException">When connection cannot be established.</exception>
         /// <exception cref="ArgumentOutOfRangeException  ">If an invalid id was given.</exception>
-        public void connect(int readerId) {
-            if (readers.Count <= readerId) throw new ArgumentOutOfRangeException("Invalid readerId.");
+        private void ConnectToCard() {
+            if (readers.Count <= selectedReader) throw new ArgumentOutOfRangeException("Invalid reader selected.");
 
-            int connectionRetCode = ModWinsCard.SCardConnect(readerContext, readers[readerId], ModWinsCard.SCARD_SHARE_SHARED,
+            int connectionRetCode = ModWinsCard.SCardConnect(readerContext, readers[selectedReader], ModWinsCard.SCARD_SHARE_SHARED,
                                               ModWinsCard.SCARD_PROTOCOL_T0 | ModWinsCard.SCARD_PROTOCOL_T1, ref hCard, ref Protocol);
 
             if (connectionRetCode != ModWinsCard.SCARD_S_SUCCESS)
-                throw new ConnectionException("Could not connect to reader. " + ModWinsCard.GetScardErrMsg(connectionRetCode));
+                throw new ConnectionException("Could not connect to card.");
 
-            Debug.WriteLine("Connected to " + readers[readerId]);
+            Debug.WriteLine("Connected to " + readers[selectedReader]);
             connectionActive = true;
         }
 
         /// <summary>
         /// Closes the connection to the reader.
         /// </summary>
-        private void close()
+        private void CloseConnectionToCard()
         {
-            int closeRetCode = ModWinsCard.SCardReleaseContext(readerContext);
-            closeRetCode = ModWinsCard.SCardDisconnect(hCard, ModWinsCard.SCARD_UNPOWER_CARD);
+            //int closeRetCode = ModWinsCard.SCardReleaseContext(readerContext);
+            ////closeRetCode = ModWinsCard.SCardDisconnect(hCard, ModWinsCard.SCARD_UNPOWER_CARD);
 
-            connectionActive = false;
-            Debug.WriteLine("Connection closed");
+            //connectionActive = false;
+            //Debug.WriteLine("Connection closed");
         }
 
         /// <summary>
         /// Lists available readers, index of the reader inside the returned array
-        /// equals the readerId for the connect function.
+        /// equals the readerId for the SetReader function.
         /// </summary>
         /// <returns>List of available readers.</returns>
-        public String[] listAvailableReaders()
+        public String[] ListAvailableReaders()
         {
             return readers.ToArray<String>();
+        }
+
+        /// <summary>
+        /// Sets the reader to read from. Defaults to 0.
+        /// </summary>
+        /// <param name="readerId">Id of reader (from ListAvailableReaders)</param>
+        public void SetReader(int readerId)
+        {
+            if (readerId >= readers.Count) throw new ArgumentOutOfRangeException("ReaderId out of range.");
+            selectedReader = readerId;
         }
 
         /// <summary>
@@ -173,7 +177,7 @@ namespace ACSTest
         /// </summary>
         /// <exception cref="ConnectionException">If connection to card dropped during loading.</exception>
         /// <exception cref="AuthentificationException">If loading of keys failed.</exception>
-        private void loadAuthenticationKey()
+        private void LoadAuthenticationKey()
         {
             ClearBuffers();
             // Load Authentication Keys command
@@ -214,7 +218,7 @@ namespace ACSTest
         /// <param name="keyNumber">Key number/location</param>
         /// <exception cref="ConnectionException">If connection to card dropped during authentificating.</exception>
         /// <exception cref="AuthentificationException">If authentificating of block failed.</exception>
-        private void authenticateBlock(byte blockNumber, KeyType keyType, byte keyNumber)
+        private void AuthenticateBlock(byte blockNumber, KeyType keyType, byte keyNumber)
         {
             ClearBuffers();
 
@@ -242,7 +246,7 @@ namespace ACSTest
             {
                 response.AppendFormat("{0:X2}", RecvBuff[i]);
             }
-            if (response.ToString().Trim() != "90 00")
+            if (response.ToString().Trim() != "9000")
                 throw new AuthentificationException("Error while authentificating block.");
             authentificatedBlock = blockNumber;
         }
@@ -257,7 +261,7 @@ namespace ACSTest
         /// <exception cref="ArgumentOutOfRangeException">If blockNumber invalid or bytesToRead longer than block size.</exception>
         /// <exception cref="ConnectionException">If connection to card dropped during reading.</exception>
         /// <exception cref="ReaderException">If read command was otherwise unsuccesfull.</exception>
-        private byte[] readBinaryBlock(byte blockNumber, byte bytesToRead)
+        private byte[] ReadBinaryBlock(byte blockNumber, byte bytesToRead)
         {
             if (authentificatedBlock != blockNumber)
                 throw new AuthentificationException("Requested block not authentificated.");
@@ -284,7 +288,7 @@ namespace ACSTest
             {
                 response.AppendFormat("{0:X2}", RecvBuff[i]);
             }
-            if (response.ToString().Trim() != "90 00")
+            if (response.ToString().Trim() != "9000")
                 throw new ReaderException("Error while reading block.");
 
             return RecvBuff;
@@ -299,11 +303,11 @@ namespace ACSTest
         /// <exception cref="AuthentificationException">If authentificating or reading of block failed.</exception>
         /// <exception cref="ArgumentOutOfRangeException">If blockNumber invalid or bytesToRead longer than block size.</exception>
         /// <exception cref="ReaderException">If read command was unsuccesfull.</exception>
-        private byte[] getBlock(byte blockNumber)
+        private byte[] GetBlock(byte blockNumber)
         {
             try {
-                authenticateBlock(blockNumber, KeyType.B, 0x00); // todo: generic keys!
-                return readBinaryBlock(blockNumber, 0x10).Take(16).ToArray<byte>(); // return only data
+                AuthenticateBlock(blockNumber, KeyType.B, 0x00); // todo: generic keys!
+                return ReadBinaryBlock(blockNumber, 0x10).Take(16).ToArray<byte>(); // return only data
             }
             catch(Exception)
             {
@@ -317,7 +321,7 @@ namespace ACSTest
         /// <exception cref="AuthentificationException">When requested block is not authentificated</exception>
         /// <exception cref="ArgumentOutOfRangeException">If blockNumber invalid or bytesToRead longer than block size.</exception>
         /// <exception cref="ConnectionException">If connection to card dropped during reading.</exception>
-        private void readCardMemory()
+        private void ReadCardMemory()
         {
             // todo make generic
             bool readMemory = true;
@@ -331,21 +335,22 @@ namespace ACSTest
                 while (readSector && currentBlock < 3)
                 {
                     readSector = false;
+                    byte[] block;
                     try {
-                        byte[] block = getBlock((byte)(sectorOffset + currentBlock));
-                        int i = 0;
-                        while (!readSector && i < block.Length)
-                        { // check for data
-                            if (block[i] != 0x00) readSector = true;
-                            i++;
-                        }
-                        if (readSector) // update only if data
-                            Buffer.BlockCopy(block, 0, cardMemory, 48 * (currentSector - 1) + (currentBlock * 16), 16);
+                        block = GetBlock((byte)(sectorOffset + currentBlock));
                     }
                     catch (Exception)
                     {
                         throw;
                     }
+                    int i = 0;
+                    while (!readSector && i < block.Length)
+                    { // check for data
+                        if (block[i] != 0x00) readSector = true;
+                        i++;
+                    }
+                    if (readSector) // update only if data
+                        Buffer.BlockCopy(block, 0, cardMemory, 48 * (currentSector - 1) + (currentBlock * 16), 16);
                     currentBlock++;
                 }
                 readMemory = readSector;
@@ -358,12 +363,22 @@ namespace ACSTest
         /// </summary>
         /// <returns>raw NDEFMessage</returns>
         /// <exception cref="CardFormatException">Content of card memory doesn't meet expectations</exception>
-        public byte[] getNDEFMessage()
+        /// <exception cref="AuthentificationException">(During readCardMemory) When requested block is not authentificated</exception>
+        /// <exception cref="ArgumentOutOfRangeException">(During readCardMemory) If blockNumber invalid or bytesToRead longer than block size.</exception>
+        /// <exception cref="ConnectionException">(During readCardMemory) If connection to card dropped during reading.</exception>
+        public byte[] GetNDEFMessage()
         {
-            if (!connectionActive)
-                throw new ConnectionException("No open connection.");
-
-            readCardMemory();
+            try
+            {
+                if (!connectionActive)
+                    ConnectToCard();
+                ReadCardMemory();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            
 
             byte[] message;
             byte startFlag = 0x03;
@@ -394,6 +409,8 @@ namespace ACSTest
             if (cardMemory[currentPosition + messageLength] != 0xFE) // check for message end
                 throw new CardFormatException("NDEF Message end not found.");
 
+            CloseConnectionToCard();
+
             return message;
         }
 
@@ -403,10 +420,17 @@ namespace ACSTest
         /// <returns>UID of card as byte array</returns>
         /// <exception cref="ConnectionException">If connection to card dropped during reading.</exception>
         /// <exception cref="ReaderException">If read command was otherwise unsuccesfull.</exception>
-        public byte[] getUID()
+        public byte[] GetUID()
         {
-            if (!connectionActive)
-                throw new ConnectionException("No open connection.");
+            try
+            {
+                if (!connectionActive)
+                    ConnectToCard();
+            }
+            catch (Exception)
+            {
+                throw;
+            }            
 
             ClearBuffers();
 
@@ -431,8 +455,10 @@ namespace ACSTest
             {
                 status.AppendFormat("{0:X2}", RecvBuff[i]);
             }
-            if (status.ToString().Trim() != "90 00")
+            if (status.ToString().Trim() != "9000")
                 throw new ReaderException("Error while reading UID.");
+
+            CloseConnectionToCard();
 
             return RecvBuff.Take(4).ToArray();
         }
@@ -482,13 +508,10 @@ namespace ACSTest
         /// <summary>
         /// Starts polling for visible cards on reader.
         /// </summary>
-        public void startPolling()
+        public void StartPolling()
         {
-            if (!connectionActive)
-                throw new ConnectionException("No open connection.");
-
             cancelSource = new CancellationTokenSource();
-            poller = new Thread(() => poll(cancelSource.Token));
+            poller = new Thread(() => Poll(cancelSource.Token));
             poller.IsBackground = true;
             poller.Start();
         }
@@ -496,25 +519,34 @@ namespace ACSTest
         /// <summary>
         /// Stops polling for visible cards on reader.
         /// </summary>
-        public void stopPolling()
+        public void StopPolling()
         {
             if (poller == null) return;
             cancelSource.Cancel();
         }
 
-        private void poll(CancellationToken cancelToken)
+        /// <summary>
+        /// Polls the reader for new
+        /// </summary>
+        /// <param name="cancelToken">token for stopping polling thread</param>
+        private void Poll(CancellationToken cancelToken)
         {
             while (true)
             {
                 cancelToken.ThrowIfCancellationRequested();
-
-
-                //todo lock object
-
-
-                
-                // todo
-                //NewNDEFMessage(null);
+                try
+                {
+                    byte[] message = GetNDEFMessage();
+                    if (message != lastMessage || lastMessageAge > 10) // only update if new message
+                    {
+                        NewNDEFMessageReceived(NdefMessage.FromByteArray(message));
+                        lastMessage = message;
+                        lastMessageAge = 0;
+                    }
+                    lastMessageAge++;
+                }
+                catch(Exception)
+                {}
                 Thread.Sleep(pollerInterval);
             }
         }
