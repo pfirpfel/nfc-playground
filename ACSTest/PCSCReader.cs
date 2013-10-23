@@ -17,6 +17,7 @@ namespace ACSTest
         private String[] readerNames;
         private int selectedReader = 0;
         private SCardReader reader;
+        private ISmartCard card;
 
         /// <summary>
         /// Variables for card polling.
@@ -70,7 +71,25 @@ namespace ACSTest
         private bool Connect()
         {
             SCardError sc = reader.Connect(readerNames[selectedReader], SCardShareMode.Shared, SCardProtocol.Any);
-            return sc == SCardError.Success;
+            if (sc != SCardError.Success) return false;
+            byte[] atr = GetATR();
+            if (atr.Length != 20) // is non-ISO14443A-3 card?
+            {                
+                Disconnect();
+                return false;
+            }
+            switch (atr[14])
+            {
+                case 0x01:
+                    card = new MifareClassic();
+                    break;
+                case 0x03:
+                    card = new MifareUltralight();
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+            return true;
         }
 
         private void Disconnect()
@@ -78,17 +97,17 @@ namespace ACSTest
             reader.Disconnect(SCardReaderDisposition.Reset);
         }
 
-        public byte[] getMemory()
+        public byte[] GetMemory()
         {
             if (!Connect()) return new byte[0]; // TODO
-            MifareUltralight card = new MifareUltralight();
+            byte[] memory = card.GetCardMemory(reader);
             Disconnect();
-            return card.GetCardMemory(reader);
+            return memory;
         }
 
         public NdefMessage GetNdefMessage()
         {
-            byte[] memory = getMemory();
+            byte[] memory = GetMemory();
 
             byte[] message;
             byte startFlag = 0x03;
@@ -123,8 +142,9 @@ namespace ACSTest
             return null;
         }
 
-        public byte[] GetATR(){
+        private byte[] GetATR(){
             SCardReaderState state = context.GetReaderStatus(readerNames[selectedReader]);
+            
             return state.Atr ?? new byte[0];
         }
 
@@ -132,10 +152,10 @@ namespace ACSTest
         {
             if (!Connect()) return new byte[0]; // TODO
 
-
-
+            byte[] uid = card.GetUid(reader);
             Disconnect();
-            return new byte[0];
+
+            return uid;
         }
 
         public String[] GetReaderNames()
@@ -191,10 +211,8 @@ namespace ACSTest
                 {
                     if (Connect())
                     {
-                        //byte[] atr = GetATR();
-                        MifareUltralight card = new MifareUltralight();
-                        byte[] uid = card.GetUid(reader);
-                        if (!uid.SequenceEqual(lastMessage)) // only update if new message
+                        byte[] uid = GetUID();
+                        if (!uid.SequenceEqual(new byte[0]) && !uid.SequenceEqual(lastMessage)) // only update if new message with content
                         {
                             NewUidDetected(uid);
                             lastMessage = uid;
@@ -217,8 +235,6 @@ namespace ACSTest
         
         //GetNDEFMessage
         //GetUID
-        //StartPolling
-        //StopPolling
 
         public void Dispose()
         {
