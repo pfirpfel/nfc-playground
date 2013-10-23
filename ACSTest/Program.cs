@@ -1,4 +1,5 @@
 ﻿using NdefLibrary.Ndef;
+using PCSC;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,29 +26,91 @@ namespace ACSTest
 
         public enum KeyType { A, B }
        
+        
 
         static void Main(string[] args)
         {
-            Program test = new Program();
 
-            test.initReader();
-            test.connectReader();
-            test.loadAuthenticationKey();
-
-            test.readCardMemory();
-
-            NdefMessage msg = NdefMessage.FromByteArray(test.getNDEFMessage());
-
-            foreach (NdefRecord record in msg)
-            {
-                Console.WriteLine("Record type: {0}, payload size {1}", Encoding.UTF8.GetString(record.Type, 0, record.Type.Length), record.Payload.Length);
-                Console.WriteLine(Encoding.UTF8.GetString(record.Payload, 0, record.Payload.Length));
-                
-            }
-
+            PCSCReader r = new PCSCReader();
+            r.NewUidDetected +=r_NewUidDetected;
+            r.StartPolling();
+            //Console.WriteLine(BitConverter.ToString(r.GetATR()));
+            //BitConverter.ToString(r.getMemory());
             Console.ReadLine();
 
-            test.closeConnection();
+            //ACSMifareReader reader = new ACSMifareReader();
+
+            //reader.GetATR();
+            //Console.ReadLine();
+            
+            //try
+            //{
+            //    Console.WriteLine("UID: {0}", BitConverter.ToString(reader.GetUID()));
+            //}
+            //catch (Exception e)
+            //{
+            //    Console.WriteLine(e.Message);
+            //}
+            //Console.ReadLine();
+            //try
+            //{
+            //    Console.WriteLine("UID: {0}", BitConverter.ToString(reader.GetNDEFMessage()));
+            //}
+            //catch (Exception e)
+            //{
+            //    Console.WriteLine(e.Message);
+            //}
+            //Console.ReadLine();
+
+            //reader.NewNDEFMessageReceived += reader_NewNDEFMessageReceived;
+
+            //reader.StartPolling();
+
+            //Console.ReadLine();
+            //reader.StopPolling();
+            
+            //reader.close();
+
+
+
+
+            //Program test = new Program();
+
+            //test.initReader();
+            //test.connectReader();
+            //test.loadAuthenticationKey();
+
+            //test.readCardMemory();
+
+            //NdefMessage msg = NdefMessage.FromByteArray(test.getNDEFMessage());
+
+            //foreach (NdefRecord record in msg)
+            //{
+            //    Console.WriteLine("Record type: {0}, payload size {1}", Encoding.UTF8.GetString(record.Type, 0, record.Type.Length), record.Payload.Length);
+            //    Console.WriteLine(Encoding.UTF8.GetString(record.Payload, 0, record.Payload.Length));
+                
+            //}
+
+            //Console.ReadLine();
+
+            //test.closeConnection();
+        }
+
+        private static void r_NewUidDetected(byte[] uid)
+        {
+            Console.WriteLine("New UID detected: {0}", BitConverter.ToString(uid));
+        }
+
+        static void reader_NewNDEFMessageReceived(NdefMessage message)
+        {
+            Console.WriteLine("Tag found.");
+            //foreach (NdefRecord record in message)
+            //{
+                
+            //    Console.WriteLine("Record type: {0}, payload size {1}", Encoding.UTF8.GetString(record.Type, 0, record.Type.Length), record.Payload.Length);
+            //    Console.WriteLine(Encoding.UTF8.GetString(record.Payload, 0, record.Payload.Length));
+
+            //}
         }
 
         private void initReader()

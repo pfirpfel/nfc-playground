@@ -35,6 +35,9 @@
     <Reference Include="NdefLibrary">
       <HintPath>..\packages\NdefLibrary.1.1.0.1\lib\portable-net45+wp80+win\NdefLibrary.dll</HintPath>
     </Reference>
+    <Reference Include="pcsc-sharp">
+      <HintPath>..\packages\PCSC.3.1.0.1\lib\net35\pcsc-sharp.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -44,15 +47,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SmartCard\AbstractSmartCard.cs" />
     <Compile Include="ACSMifareReader.cs" />
+    <Compile Include="SmartCard\MifareClassic.cs" />
+    <Compile Include="SmartCard\MifareUltralight.cs" />
     <Compile Include="ModWinsCard.cs" />
+    <Compile Include="PCSCReader.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SmartCard\ISmartCard.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="pcsc-sharp.dll.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -475,6 +475,44 @@ namespace ACSTest
             }
         }
 
+        private enum ReaderState : int {
+            Unknown = 0, // driver is unaware of the current state of the reader
+            Absent = 1, // no card in the reader
+            Present = 2, // card is present in the reader, but that it has not been moved into position for use
+            Swallowed = 3, // card in the reader in position for use, but is not powered
+            Powered = 4, // power is being provided to the card, but the Reader Driver is unaware of the mode of the card
+            Negotiable = 5, // card has been reset and is awaiting PTS negotiation
+            Specific = 6 // card has been reset and specific communication protocols have been established
+        }
+
+        public void GetATR()
+        {
+
+            ConnectToCard();
+            ClearBuffers();
+            //char[] readerName = new char[200];
+            String readerName = readers[selectedReader];
+            int pcchReaderLen = 0; // readers[selectedReader].Length;
+            //Array.Copy(readers[selectedReader].ToCharArray(), readerName, pcchReaderLen);
+            int state = 0;//, protocol = 0, recvLen = 0;
+            
+
+            //SCardStatus(int hCard, string szReaderName, ref int pcchReaderLen, ref int State, ref int Protocol,  ref byte ATR, ref int ATRLen);
+            int atrReturnCode = ModWinsCard.SCardStatus(hCard, readerName, ref pcchReaderLen, ref state, ref Protocol, ref RecvBuff[0], ref RecvLen);
+            //int atrReturnCode = ModWinsCard.SCardStatus(hCard, readerName, ref pcchReaderLen, ref state, ref Protocol, ref RecvBuff[0], ref RecvLen);
+            
+            //int SCardState (int hCard, ref uint State, ref uint Protocol, ref byte ATR, ref uint ATRLen); 
+            //int atrReturnCode = ModWinsCard.SCardState(hCard, ref state, ref protocol, ref RecvBuff[0], ref recvLen); 
+
+            StringBuilder response = new StringBuilder();
+            for (int i = 0; i <= RecvLen - 1; i++)
+            {
+                response.AppendFormat("{0:X2}", RecvBuff[i]);
+            }
+            Debug.WriteLine("status: {0}", response.ToString());
+            
+        }
+
         /// <summary>
         /// Sends the APDU command.
         /// </summary>
