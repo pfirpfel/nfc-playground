@@ -51,7 +51,6 @@
     <Compile Include="SmartCard\AbstractSmartCard.cs" />
     <Compile Include="SmartCard\MifareClassic.cs" />
     <Compile Include="SmartCard\MifareUltralight.cs" />
-    <Compile Include="ModWinsCard.cs" />
     <Compile Include="PCSCReader.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
