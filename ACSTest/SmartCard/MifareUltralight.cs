@@ -52,5 +52,10 @@ namespace ACSTest
                 return new byte[0];
             }
         }
+
+        public override string GetCardType()
+        {
+            return "Mifare Ultralight";
+        }
     }
 }

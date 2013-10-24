@@ -12,6 +12,8 @@ namespace ACSTest
     {
         public abstract byte[] GetCardMemory(SCardReader reader);
 
+        public abstract String GetCardType();
+
         public byte[] GetUid(SCardReader reader)
         {
             SCardError sc = reader.BeginTransaction();
