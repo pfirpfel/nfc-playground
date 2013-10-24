@@ -21,14 +21,6 @@ namespace ACSTest
         private SCardReader reader;
         private ISmartCard card;
 
-        /// <summary>
-        /// Variables for card polling.
-        /// </summary>
-        private Thread poller;
-        private CancellationTokenSource cancelSource;
-        private const int pollerInterval = 200; // in milliseconds
-        private byte[] lastMessage;
-
         public event NewUidHandler NewUidDetected;
 
         private NewNdefMessageHandler _newNdefMessageDetected;
@@ -249,57 +241,6 @@ namespace ACSTest
                     selectedReader = i;
                     break;
                 }
-            }
-        }
-
-        public void StartPolling()
-        {
-            cancelSource = new CancellationTokenSource();
-            poller = new Thread(() => Poll(cancelSource.Token));
-            poller.IsBackground = true;
-            lastMessage = new byte[0];
-            poller.Start();
-        }
-
-        /// <summary>
-        /// Stops polling for visible cards on reader.
-        /// </summary>
-        public void StopPolling()
-        {
-            if (poller == null) return;
-            cancelSource.Cancel();
-        }
-
-        /// <summary>
-        /// Polls the reader for new
-        /// </summary>
-        /// <param name="cancelToken">token for stopping polling thread</param>
-        private void Poll(CancellationToken cancelToken)
-        {
-            while (true)
-            {
-                cancelToken.ThrowIfCancellationRequested();
-                try
-                {
-                    if (Connect())
-                    {
-                        byte[] uid = GetUID();
-                        if (!uid.SequenceEqual(new byte[0]) && !uid.SequenceEqual(lastMessage)) // only update if new message with content
-                        {
-                            NewUidDetected(uid);
-                            lastMessage = uid;
-                        }
-                        Disconnect();
-                    }
-                    else
-                    {
-                        // reset last message
-                        lastMessage = new byte[0];
-                    }
-                }
-                catch (Exception)
-                { }
-                Thread.Sleep(pollerInterval);
             }
         }
 
