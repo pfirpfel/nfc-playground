@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ACSTest
+namespace nfc_playground
 {
     public interface ISmartCard
     {

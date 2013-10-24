@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ACSTest
+namespace nfc_playground
 {
     public delegate void NewNdefMessageHandler(NdefMessage message, int readerId);
     public delegate void NewUidHandler(byte[] uid);
