@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.20827.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACSTest", "ACSTest\ACSTest.csproj", "{734E1B71-1EA0-456F-8F5B-1088E3A1D1EA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nfc-playground", "nfc-playground\nfc-playground.csproj", "{3EBE49D1-2DAE-4EF8-AABC-052D28E83424}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{734E1B71-1EA0-456F-8F5B-1088E3A1D1EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{734E1B71-1EA0-456F-8F5B-1088E3A1D1EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{734E1B71-1EA0-456F-8F5B-1088E3A1D1EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{734E1B71-1EA0-456F-8F5B-1088E3A1D1EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3EBE49D1-2DAE-4EF8-AABC-052D28E83424}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3EBE49D1-2DAE-4EF8-AABC-052D28E83424}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3EBE49D1-2DAE-4EF8-AABC-052D28E83424}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3EBE49D1-2DAE-4EF8-AABC-052D28E83424}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
