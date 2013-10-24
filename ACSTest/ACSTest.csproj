@@ -49,7 +49,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="SmartCard\AbstractSmartCard.cs" />
-    <Compile Include="ACSMifareReader.cs" />
     <Compile Include="SmartCard\MifareClassic.cs" />
     <Compile Include="SmartCard\MifareUltralight.cs" />
     <Compile Include="ModWinsCard.cs" />
