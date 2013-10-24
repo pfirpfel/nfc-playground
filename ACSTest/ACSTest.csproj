@@ -35,8 +35,9 @@
     <Reference Include="NdefLibrary">
       <HintPath>..\packages\NdefLibrary.1.1.0.1\lib\portable-net45+wp80+win\NdefLibrary.dll</HintPath>
     </Reference>
-    <Reference Include="pcsc-sharp">
-      <HintPath>..\packages\PCSC.3.1.0.1\lib\net35\pcsc-sharp.dll</HintPath>
+    <Reference Include="pcsc-sharp, Version=3.1.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\lib\pcsc-sharp.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -60,7 +61,6 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
-    <None Include="pcsc-sharp.dll.config" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
