@@ -21,8 +21,6 @@ namespace nfc_playground
         private SCardReader reader;
         private ISmartCard card;
 
-        public event NewUidHandler NewUidDetected;
-
         private NewNdefMessageHandler _newNdefMessageDetected;
         private SCardMonitor monitor;
         private bool monitorRunning = false;
@@ -111,7 +109,8 @@ namespace nfc_playground
             if (sc != SCardError.Success) return false;
             byte[] atr = GetATR(readerName);
             if (atr.Length != 20) // is non-ISO14443A-3 card?
-            {                
+            {
+                Debug.WriteLine("Can't connect to non-ISO14443A-3-cards.");
                 Disconnect();
                 return false;
             }
@@ -190,7 +189,10 @@ namespace nfc_playground
                 Buffer.BlockCopy(memory, currentPosition, message, 0, messageLength);
 
                 if (memory[currentPosition + messageLength] != 0xFE) // check for message end
-                    return null; // throw new Exception("NDEF Message end not found.");
+                {
+                    Debug.WriteLine("NDEF Message end not found.");
+                    return null;
+                }
 
                 return NdefMessage.FromByteArray(message);
             }
