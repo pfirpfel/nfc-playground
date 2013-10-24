@@ -100,7 +100,7 @@ namespace ACSTest
 
         private bool LoadAuthenticationKey(SCardReader reader)
         {
-            var apdu = new CommandApdu(IsoCase.Case2Short, reader.ActiveProtocol)
+            var apdu = new CommandApdu(IsoCase.Case3Short, reader.ActiveProtocol)
             {
                 CLA = 0xFF,
                 Instruction = InstructionCode.ExternalAuthenticate,
@@ -111,7 +111,7 @@ namespace ACSTest
 
             var responseApdu = SendAPDU(apdu, reader);
 
-            if (responseApdu != null && responseApdu.SW1 == 0x80)
+            if (responseApdu != null && responseApdu.SW1 == 0x90)
             {
                 return true;
             }
@@ -123,7 +123,7 @@ namespace ACSTest
 
         private bool AuthenticateBlock(byte blockNumber, SCardReader reader)
         {
-            var apdu = new CommandApdu(IsoCase.Case2Short, reader.ActiveProtocol)
+            var apdu = new CommandApdu(IsoCase.Case3Short, reader.ActiveProtocol)
             {
                 CLA = 0xFF,
                 Instruction = InstructionCode.InternalAuthenticate,
@@ -139,7 +139,7 @@ namespace ACSTest
 
             var responseApdu = SendAPDU(apdu, reader);
 
-            if (responseApdu != null && responseApdu.SW1 == 0x80)
+            if (responseApdu != null && responseApdu.SW1 == 0x90)
             {
                 return true;
             }
@@ -167,7 +167,7 @@ namespace ACSTest
 
             var responseApdu = SendAPDU(apdu, reader);
 
-            if (responseApdu != null && responseApdu.SW1 == 0x80)
+            if (responseApdu != null && responseApdu.SW1 == 0x90)
             {
                 return responseApdu.GetData().Take(16).ToArray(); // todo check size in debugging
             }
