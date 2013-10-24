@@ -22,5 +22,11 @@ namespace ACSTest
         /// <param name="reader">Card UID as byte array</param>
         /// <returns></returns>
         byte[] GetUid(SCardReader reader);
+
+        /// <summary>
+        /// Returns the card type name.
+        /// </summary>
+        /// <returns>Card type</returns>
+        String GetCardType();
     }
 }
