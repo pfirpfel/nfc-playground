@@ -12,12 +12,10 @@ using System.Threading.Tasks;
 namespace nfc_playground
 {
     public delegate void NewNdefMessageHandler(NdefMessage message, int readerId);
-    public delegate void NewUidHandler(byte[] uid);
     class PCSCReader : IDisposable
     {
         private SCardContext context;
         private String[] readerNames;
-        private int selectedReader = 0;
         private SCardReader reader;
         private ISmartCard card;
 
@@ -32,7 +30,6 @@ namespace nfc_playground
                 if (!monitorRunning)
                     startMonitor();
                 _newNdefMessageDetected += value;
-            
             }
 
             remove {
@@ -97,10 +94,6 @@ namespace nfc_playground
         private void MonitorException(object sender, PCSCException ex)
         {
             Debug.WriteLine("Monitor exited due an error: {0}", SCardHelper.StringifyError(ex.SCardError));
-        }
-
-        private bool Connect() {
-            return Connect(readerNames[selectedReader]);
         }
 
         private bool Connect(String readerName)
@@ -204,14 +197,14 @@ namespace nfc_playground
             return state.Atr ?? new byte[0];
         }
 
-        public byte[] GetUID()
+        public byte[] GetUID(String readerName)
         {
             byte[] uid = new byte[0];
             bool lockTaken = false;
             try
             {
                 Monitor.Enter(reader, ref lockTaken);
-                if (Connect())
+                if (Connect(readerName))
                 {
                     uid = card.GetUid(reader);
                     Disconnect();
@@ -227,23 +220,6 @@ namespace nfc_playground
         public String[] GetReaderNames()
         {
             return readerNames;
-        }
-
-        public void SetReader(int readerId)
-        {
-            selectedReader = readerId;
-        }
-
-        public void SetReader(String readerName)
-        {
-            for (int i = 0; i < readerNames.Length; i++)
-            {
-                if (readerNames[i].Equals(readerName))
-                {
-                    selectedReader = i;
-                    break;
-                }
-            }
         }
 
         public void Dispose()
