@@ -47,6 +47,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BuzzKiller\BuzzKiller.cs" />
+    <Compile Include="BuzzKiller\ModWinsCard.cs" />
     <Compile Include="SmartCard\AbstractSmartCard.cs" />
     <Compile Include="SmartCard\ISmartCard.cs" />
     <Compile Include="SmartCard\MifareClassic.cs" />

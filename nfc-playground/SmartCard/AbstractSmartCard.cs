@@ -2,6 +2,7 @@
 using PCSC.Iso7816;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -62,5 +63,34 @@ namespace nfc_playground
 
             return new ResponseApdu(receiveBuffer, IsoCase.Case2Short, reader.ActiveProtocol);
         }
+
+        public void setBuzzer(bool enabled, SCardReader reader)
+        { // ACR122-specific command!
+            reader.BeginTransaction();
+            byte p2 = 0xFF;
+            if (!enabled) p2 = 0x00;
+
+            var apdu = new CommandApdu(IsoCase.Case1, reader.ActiveProtocol)
+            {
+                CLA = 0xFF,
+                Instruction = InstructionCode.PseudoApdu,
+                P1 = 0x52,
+                P2 = p2,
+                Le = 0x00
+            };
+
+            byte[] receiveBuffer = new byte[256];
+            byte[] command = apdu.ToArray();
+
+            SCardError sc = reader.Transmit(command, ref receiveBuffer);
+
+            reader.EndTransaction(SCardReaderDisposition.Leave);
+
+            if (sc != SCardError.Success)
+            {
+                Debug.WriteLine("Setting buzzer unsuccessful.");
+            }
+        }
+
     }
 }

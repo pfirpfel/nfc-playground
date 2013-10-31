@@ -19,8 +19,8 @@ namespace nfc_playground
         /// <summary>
         /// Returns the card's unique identifier.
         /// </summary>
-        /// <param name="reader">Card UID as byte array</param>
-        /// <returns></returns>
+        /// <param name="reader">Reader the card is connected to</param>
+        /// <returns>Card UID as byte array</returns>
         byte[] GetUid(SCardReader reader);
 
         /// <summary>
@@ -28,5 +28,12 @@ namespace nfc_playground
         /// </summary>
         /// <returns>Card type</returns>
         String GetCardType();
+
+        /// <summary>
+        /// Enables or disables buzzing noise when tag is read at the reader.
+        /// </summary>
+        /// <param name="enabled">true, if reader should make buzzing noise</param>
+        /// <param name="reader">Reader the card is connected to</param>
+        void setBuzzer(bool enabled, SCardReader reader);
     }
 }

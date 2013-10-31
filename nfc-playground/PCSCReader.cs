@@ -48,6 +48,10 @@ namespace nfc_playground
             context.Establish(SCardScope.System);
             readerNames = context.GetReaders();
             reader = new SCardReader(context);
+            //foreach (String readerName in readerNames)
+            //{
+            //    setBuzzer(false, readerName);
+            //}
         }
 
         private void startMonitor()
@@ -99,7 +103,7 @@ namespace nfc_playground
         private bool Connect(String readerName)
         {
             SCardError sc = reader.Connect(readerName, SCardShareMode.Shared, SCardProtocol.Any);
-            if (sc != SCardError.Success) return false;
+            //if (sc != SCardError.Success) return false;
             byte[] atr = GetATR(readerName);
             if (atr.Length != 20) // is non-ISO14443A-3 card?
             {
@@ -215,6 +219,24 @@ namespace nfc_playground
                 if (lockTaken) Monitor.Exit(reader);
             }
             return uid;
+        }
+
+        public void setBuzzer(bool enabled, String readerName)
+        { // ACR122-specific command, only works if card is connected
+            bool lockTaken = false;
+            try
+            {
+                Monitor.Enter(reader, ref lockTaken);
+                if (Connect(readerName))
+                {
+                    card.setBuzzer(enabled, reader);
+                    Disconnect();
+                }
+            }
+            finally
+            {
+                if (lockTaken) Monitor.Exit(reader);
+            }
         }
 
         public String[] GetReaderNames()
